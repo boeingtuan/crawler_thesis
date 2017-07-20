@@ -10,7 +10,7 @@
                 <goal>org.codehaus.mojo:exec-maven-plugin:1.2.1:exec</goal>
             </goals>
             <properties>
-                <exec.args>-Dlog4j.configuration=file:conf/log4j.properties -Dconfig.file=conf/application.conf -classpath %classpath com.bk.thesis.reviewcrawler.app.MainApp</exec.args>
+                <exec.args>-Dzappname=ReviewCrawler  -Dzappprof=development  -Dzconfdir=conf  -Dzconffiles=config.ini  -ea  -server -classpath %classpath com.bk.thesis.reviewcrawler.app.MainApp</exec.args>
                 <exec.executable>java</exec.executable>
             </properties>
         </action>
@@ -24,7 +24,7 @@
                 <goal>org.codehaus.mojo:exec-maven-plugin:1.2.1:exec</goal>
             </goals>
             <properties>
-                <exec.args>-Xdebug -Xrunjdwp:transport=dt_socket,server=n,address=${jpda.address} -Dlog4j.configuration=file:conf/log4j.properties -Dconfig.file=conf/application.conf -classpath %classpath com.bk.thesis.reviewcrawler.app.MainApp</exec.args>
+                <exec.args>-Xdebug -Xrunjdwp:transport=dt_socket,server=n,address=${jpda.address} -Dzappname=ReviewCrawler  -Dzappprof=development  -Dzconfdir=conf  -Dzconffiles=config.ini  -ea  -server -classpath %classpath com.bk.thesis.reviewcrawler.app.MainApp</exec.args>
                 <exec.executable>java</exec.executable>
                 <jpda.listen>true</jpda.listen>
             </properties>
@@ -39,8 +39,39 @@
                 <goal>org.codehaus.mojo:exec-maven-plugin:1.2.1:exec</goal>
             </goals>
             <properties>
-                <exec.args>-Dlog4j.configuration=file:conf/log4j.properties -Dconfig.file=conf/application.conf -classpath %classpath com.bk.thesis.reviewcrawler.app.MainApp</exec.args>
+                <exec.args>-Dzappname=ReviewCrawler  -Dzappprof=development  -Dzconfdir=conf  -Dzconffiles=config.ini  -ea  -server -classpath %classpath com.bk.thesis.reviewcrawler.app.MainApp</exec.args>
                 <exec.executable>java</exec.executable>
+            </properties>
+        </action>
+        <action>
+            <actionName>run.single.main</actionName>
+            <packagings>
+                <packaging>*</packaging>
+            </packagings>
+            <goals>
+                <goal>process-classes</goal>
+                <goal>org.codehaus.mojo:exec-maven-plugin:1.2.1:exec</goal>
+            </goals>
+            <properties>
+                <exec.args>-Dzappname=ReviewCrawler  -Dzappprof=development  -Dzconfdir=conf  -Dzconffiles=config.ini  -ea  -server -classpath %classpath ${packageClassName}</exec.args>
+                <exec.executable>java</exec.executable>
+                <exec.classpathScope>${classPathScope}</exec.classpathScope>
+            </properties>
+        </action>
+        <action>
+            <actionName>debug.single.main</actionName>
+            <packagings>
+                <packaging>*</packaging>
+            </packagings>
+            <goals>
+                <goal>process-classes</goal>
+                <goal>org.codehaus.mojo:exec-maven-plugin:1.2.1:exec</goal>
+            </goals>
+            <properties>
+                <exec.args>-Dzappname=ReviewCrawler  -Dzappprof=development  -Dzconfdir=conf  -Dzconffiles=config.ini  -ea  -server -Xdebug -Xrunjdwp:transport=dt_socket,server=n,address=${jpda.address} -classpath %classpath ${packageClassName}</exec.args>
+                <exec.executable>java</exec.executable>
+                <exec.classpathScope>${classPathScope}</exec.classpathScope>
+                <jpda.listen>true</jpda.listen>
             </properties>
         </action>
     </actions>
