@@ -1,1 +1,4 @@
 /target/
+/thrift/common-thrift/build/
+/thrift/common-thrift/dist/
+/thrift/common-thrift/nbproject/private/

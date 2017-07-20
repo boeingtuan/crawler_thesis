@@ -43,20 +43,7 @@
             <artifactId>httpclient</artifactId>
             <version>4.5.2</version>
         </dependency>
-       
-        <dependency>
-            <groupId>org.mongodb</groupId>
-            <artifactId>mongo-java-driver</artifactId>
-            <version>3.4.2</version>
-        </dependency>
-        
-        <dependency>
-            <groupId>com.google.code.gson</groupId>
-            <artifactId>gson</artifactId>
-            <version>2.6.2</version>
-        </dependency>
-
-        
+                   
         <!-- Local jar dependency -->
         <dependency>
             <groupId>com.vng.zing</groupId>
@@ -64,8 +51,8 @@
             <version>1.0.0</version>
         </dependency>
         <dependency>
-            <groupId>com.bk.thesis.reivewcrawler.thrift</groupId>
-            <artifactId>reviewcrawler-thrift-10</artifactId>
+            <groupId>com.bk.thesis.data.thrift</groupId>
+            <artifactId>common-thrift-10</artifactId>
             <version>1.0.0.0</version>
         </dependency>
         
@@ -94,6 +81,16 @@
             <groupId>org.apache.thrift</groupId>
             <artifactId>libthrift</artifactId>
             <version>0.10.0</version>
+        </dependency>
+        <dependency>
+            <groupId>org.mongodb</groupId>
+            <artifactId>mongo-java-driver</artifactId>
+            <version>3.4.2</version>
+        </dependency>
+        <dependency>
+            <groupId>com.google.code.gson</groupId>
+            <artifactId>gson</artifactId>
+            <version>2.6.2</version>
         </dependency>
         <dependency>
             <groupId>commons-lang</groupId>
@@ -233,14 +230,14 @@
                         </goals>
                     </execution>
                     <execution>
-                        <id>install reviewcrawler-thrift-10-1.0.0.0.jar</id>
+                        <id>install common-thrift-10-1.0.0.0.jar</id>
                         <phase>clean</phase>
                         <configuration>
-                            <file>${basedir}/lib/reviewcrawler-thrift-10-1.0.0.0.jar</file>
+                            <file>${basedir}/lib/common-thrift-10-1.0.0.0.jar</file>
                             <repositoryLayout>default</repositoryLayout>
                             
-                            <groupId>com.bk.thesis.reivewcrawler.thrift</groupId>
-                            <artifactId>reviewcrawler-thrift-10</artifactId>
+                            <groupId>com.bk.thesis.data.thrift</groupId>
+                            <artifactId>common-thrift-10</artifactId>
                             <version>1.0.0.0</version>
                             <packaging>jar</packaging>
                             

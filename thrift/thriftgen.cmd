@@ -2,7 +2,7 @@
 
 THRIFT_EXE=thrift
 THRIFT_VER=10
-APP_NAME=reviewcrawler
+APP_NAME=common
 
 #Java
 mkdir -p $APP_NAME-thrift/
