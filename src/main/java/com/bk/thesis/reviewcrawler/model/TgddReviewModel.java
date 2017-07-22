@@ -1,14 +1,17 @@
 package com.bk.thesis.reviewcrawler.model;
 
+import com.bk.thesis.configer.ZConfig;
 import com.bk.thesis.data.thrift.TProduct;
 import com.bk.thesis.data.thrift.TRawReview;
 import com.bk.thesis.data.thrift.TRawReviewPage;
 import com.bk.thesis.data.thrift.TRawReviewResult;
 import com.bk.thesis.data.thrift.TReviewMeta;
 import com.bk.thesis.reviewcrawler.common.CrawlerConfig;
+import com.bk.thesis.reviewcrawler.common.HttpCommon;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.URL;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -16,10 +19,14 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import org.apache.http.HttpEntity;
+import org.apache.http.HttpHost;
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
 import org.apache.http.StatusLine;
+import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.util.EntityUtils;
@@ -38,11 +45,15 @@ public abstract class TgddReviewModel extends BaseCrawlerModel {
     private static final Class ThisClass = TgddReviewModel.class;
     private static final Logger _Logger = Logger.getLogger(ThisClass);
 
+    public static final ParseProduct TGDD_PARSE_PRODUCT;
     private static final String _endPointRatingComment;
     private static final Map<String, Long> _timeUnit;
     private static final int _nretry;
+    private static final String _proxyHost;
+    private static final int _proxyPort;
 
     static {
+        TGDD_PARSE_PRODUCT = new TgddParseProduct();
         _endPointRatingComment = "https://www.thegioididong.com/aj/ProductV4/RatingCommentList";
         _timeUnit = new HashMap();
         _timeUnit.put("phút", 60000L);
@@ -51,6 +62,8 @@ public abstract class TgddReviewModel extends BaseCrawlerModel {
         _timeUnit.put("tuần", 604800000L);
         _timeUnit.put("tháng", 2629746000L);
         _nretry = 5;
+        _proxyHost = ZConfig.Instance.getString(ThisClass, "config", "proxy_host", "123.30.129.168");
+        _proxyPort = ZConfig.Instance.getInt(ThisClass, "config", "proxy_port", 3128);
     }
 
     public TgddReviewModel(CrawlerConfig _config) throws Exception {
@@ -58,7 +71,7 @@ public abstract class TgddReviewModel extends BaseCrawlerModel {
     }
 
     @Override
-    protected TRawReviewPage getReviewPage(TProduct product, int pageIndex) {
+    protected TRawReviewPage getReviewPage(TProduct product, int pageIndex, boolean useProxy) {
         TRawReviewPage ret = new TRawReviewPage(true, false);
         try {
             URI uri = new URIBuilder(_endPointRatingComment)
@@ -66,6 +79,13 @@ public abstract class TgddReviewModel extends BaseCrawlerModel {
                     .addParameter("page", ++pageIndex + "")
                     .build();
             HttpPost postReq = new HttpPost(uri);
+            if (useProxy) {
+                HttpHost proxy = new HttpHost(_proxyHost, _proxyPort, "http");
+                RequestConfig config = RequestConfig.custom()
+                        .setProxy(proxy)
+                        .build();
+                postReq.setConfig(config);
+            }
             postReq.setHeader("Content-Type", "application/x-www-form-urlencoded");
             postReq.setHeader("User-Agent", "Mozilla/5.0 (X11; Linux x86_64) "
                     + "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/57.0.2987.133 "
@@ -96,6 +116,18 @@ public abstract class TgddReviewModel extends BaseCrawlerModel {
         }
         return ret;
 
+    }
+
+    @Override
+    protected int getExpectReview(String url) {
+        try {
+            String html = HttpCommon.getWebpage(url, 5);
+            Document productHtml = Jsoup.parse(html);
+            String ratingResult = productHtml.select("div.ratingresult a").first().text();
+            return Integer.valueOf(ratingResult.split(" ")[0]);
+        } catch (Exception e) {
+            return 0;
+        }
     }
 
     @Override
@@ -197,30 +229,53 @@ public abstract class TgddReviewModel extends BaseCrawlerModel {
         }
     }
 
-//    public static void main(String[] args) {
-//        try {
-//            CrawlerConfig config = new CrawlerConfig();
-//            config.setDbConf("TgddMongoDatabase");
-//            config.setLimitProductBatchSize(100);
-//            config.setMaxProductPage(10);
-//            config.setPrefixId("tgdd");
-//            config.setTimeout(1);
-//            TgddReviewModel model = new TgddReviewModel(config, 42);//dtdd = 42
-//
-//            TProductPage productPage = model.getProductPage(0);
-//            if (productPage.isExist()) {
-//                List<TProduct> parseProductPage = model.parseProductPage(productPage.getPageData());
-//                for (TProduct product : parseProductPage) {
-//                    TRawReviewPage reviewPage = model.getReviewPage(product, 0);
-//                    if (reviewPage.isExist()) {
-//                        TRawReviewResult parseReviewPage = model.parseReviewPage(product, reviewPage.getPageData(), false, true);
-//                        System.out.println(parseReviewPage);
-//                    }
-//                    break;
-//                }
-//            }
-//        } catch (Exception ex) {
-//            _Logger.error(ex);
-//        }
-//    }
+    private static class TgddParseProduct implements ParseProduct {
+
+        private static final Pattern _regex = Pattern.compile("(\\/[0-9]+)");
+        private static final TReviewMeta _cerReviews = new TReviewMeta(0, "", 0);
+        ;
+        private static final TReviewMeta _notcerReviews = new TReviewMeta(0, "", 0);
+
+        ;
+
+        private String getProductId(Element img) {
+            String imgUrl = img.attr("src");
+            Matcher m = _regex.matcher(imgUrl);
+            // get second number -> product id of tgdd
+            String ret;
+            if (m.find()) {
+                m.find();
+                ret = m.group(1).substring(1);
+            } else {
+                imgUrl = img.attr("data-original");
+                m = _regex.matcher(imgUrl);
+                m.find();
+                m.find();
+                ret = m.group(1).substring(1);
+            }
+
+            return ret;
+        }
+
+        @Override
+        public TProduct parseProductByLink(String productLink) {
+            String productHtmlStr = HttpCommon.getWebpage(productLink, _nretry);
+            if (productHtmlStr.isEmpty()) {
+                _Logger.error("Fail parseProductByLink " + productLink);
+                return null;
+            }
+            Document productHtml = Jsoup.parse(productHtmlStr);
+            Elements imgs = productHtml.select("aside.picture img");
+            if (imgs.size() > 0) {
+                Element img = imgs.first();
+                String productId = getProductId(img);
+                String title = productHtml.select(".rowtop h1").text();
+
+                TProduct product = new TProduct(productId, productLink, title, _cerReviews, _notcerReviews, 0);
+                return product;
+            }
+            return null;
+        }
+
+    }
 }

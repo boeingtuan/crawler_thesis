@@ -5,13 +5,22 @@ package com.bk.thesis.reviewcrawler.common;
  * @author boeingtuan
  */
 public class CrawlerConfig {
-    
+
     private String prefixId = null;
     private String dbConf = null;
     private int maxProductPage = 0;
     private int limitProductBatchSize = 0;
     private int errorConsThreshold = 3;
+    private int emptyConsThreshold = 3;
     private long timeout = 0;
+
+    public int getEmptyConsThreshold() {
+        return emptyConsThreshold;
+    }
+
+    public void setEmptyConsThreshold(int emptyConsThreshold) {
+        this.emptyConsThreshold = emptyConsThreshold;
+    }
 
     public int getErrorConsThreshold() {
         return errorConsThreshold;
@@ -64,10 +73,10 @@ public class CrawlerConfig {
             this.maxProductPage = 1;
         }
     }
-    
+
     public boolean validate() {
-        return !(prefixId == null || dbConf == null ||
-                maxProductPage == 0 || limitProductBatchSize == 0 ||
-                timeout == 0);
+        return !(prefixId == null || dbConf == null
+                || maxProductPage == 0 || limitProductBatchSize == 0
+                || timeout == 0);
     }
 }

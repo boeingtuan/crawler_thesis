@@ -4,6 +4,7 @@ import com.bk.thesis.data.thrift.TProduct;
 import com.bk.thesis.data.thrift.TProductPage;
 import com.bk.thesis.data.thrift.TReviewMeta;
 import com.bk.thesis.reviewcrawler.common.CrawlerConfig;
+import com.bk.thesis.reviewcrawler.common.HttpCommon;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -44,7 +45,7 @@ public class TgddCateProductModel extends TgddReviewModel {
 
     static {
         _endPointProductPage = "https://www.thegioididong.com/aj/CategoryV4/Product";
-        _prefixLink = "https://www.thegioididong.com/";
+        _prefixLink = "https://www.thegioididong.com";
         _nretry = 3;
         _regex = Pattern.compile("(\\/[0-9]+)");
         _cerReviews = new TReviewMeta(0, "", 0);
@@ -113,18 +114,23 @@ public class TgddCateProductModel extends TgddReviewModel {
         for (Element productHtml : productsHtml) {
             try {
                 String title = productHtml.select("h3").first().text();
-                Element img = productHtml.select("img").first();
+                String url = _prefixLink + productHtml.select("a").first().attr("href");
+
+                String productHtmlStr = HttpCommon.getWebpage(url, _nretry);
+                if (productHtmlStr.isEmpty()) {
+                    continue;
+                }
+                Element img = Jsoup.parse(productHtmlStr).select("aside.picture img").first();
                 String productId = getProductId(img);
-
-                String url = _prefixLink + productHtml.attr("href");
-
+                
                 TProduct product = new TProduct(productId, url, title, _cerReviews, _notcerReviews, 0);
-                ret.add(product);
 
                 Elements versionsHtml = productHtml.select("div.version");
                 if (versionsHtml.size() > 0) {
                     List<TProduct> versionProduct = parseVersionProduct(versionsHtml.first());
                     ret.addAll(versionProduct);
+                } else {
+                    ret.add(product);
                 }
 
             } catch (Exception ex) {
@@ -158,23 +164,23 @@ public class TgddCateProductModel extends TgddReviewModel {
         List<TProduct> ret = new ArrayList();
         for (Element url : urls) {
             String urlStr = _prefixLink + url.attr("href");
-            try {                
-                Document productHtml = Jsoup.parse(new URL(urlStr), 2000);
-                Elements imgs = productHtml.select("aside.picture img");
-                if (imgs.size() > 0) {
-                    Element img = imgs.first();
-                    String productId = getProductId(img);
-                    String title = productHtml.select(".rowtop h1").text();
-                    
-                    TProduct product = new TProduct(productId, urlStr, title, _cerReviews, _notcerReviews, 0);
-                    ret.add(product);
-                }
-            } catch (IOException ex) {
-                _Logger.error(ex.getMessage() + " URL: " + urlStr, ex);
+            String productHtmlStr = HttpCommon.getWebpage(urlStr, _nretry);
+            if (productHtmlStr.isEmpty()) {
+                _Logger.error("Fail parserVersionProduct " + urlStr);
+                continue;
+            }
+            Document productHtml = Jsoup.parse(productHtmlStr);
+            Elements imgs = productHtml.select("aside.picture img");
+            if (imgs.size() > 0) {
+                Element img = imgs.first();
+                String productId = getProductId(img);
+                String title = productHtml.select(".rowtop h1").text();
+
+                TProduct product = new TProduct(productId, urlStr, title, _cerReviews, _notcerReviews, 0);
+                ret.add(product);
             }
         }
 
         return ret;
     }
-
 }
